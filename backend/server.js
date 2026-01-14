@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 
 const app = express();
 app.use(cors());
@@ -9,7 +9,12 @@ app.use(express.json());
 const sequelize = new Sequelize({ 
   dialect: 'sqlite', 
   storage: './database.sqlite', 
-  logging: false 
+  logging: false,
+  dialectOptions: {
+    sqlite: {
+      disable_triggers: true
+    }
+  }
 });
 
 // --- MODÈLES ---
@@ -36,6 +41,17 @@ const Appointment = sequelize.define('Appointment', {
   userId: DataTypes.INTEGER 
 });
 
+const ConsultationNote = sequelize.define('ConsultationNote', {
+  appointmentId: DataTypes.INTEGER,
+  doctorId: DataTypes.INTEGER,
+  userId: DataTypes.INTEGER,
+  symptoms: DataTypes.TEXT,
+  diagnosis: DataTypes.TEXT,
+  treatment: DataTypes.TEXT,
+  notes: DataTypes.TEXT,
+  visitDate: DataTypes.DATE
+});
+
 const Review = sequelize.define('Review', {
   rating: DataTypes.INTEGER,
   comment: DataTypes.STRING,
@@ -52,6 +68,16 @@ Appointment.belongsTo(Doctor, { foreignKey: 'doctorId' });
 
 Doctor.hasMany(Review, { foreignKey: 'doctorId' });
 Review.belongsTo(Doctor, { foreignKey: 'doctorId' });
+
+// Associations pour l'historique
+Appointment.hasOne(ConsultationNote, { foreignKey: 'appointmentId' });
+ConsultationNote.belongsTo(Appointment, { foreignKey: 'appointmentId' });
+
+User.hasMany(ConsultationNote, { foreignKey: 'userId' });
+ConsultationNote.belongsTo(User, { foreignKey: 'userId' });
+
+Doctor.hasMany(ConsultationNote, { foreignKey: 'doctorId' });
+ConsultationNote.belongsTo(Doctor, { foreignKey: 'doctorId' });
 
 // --- ROUTES ---
 
@@ -96,10 +122,48 @@ app.get('/api/stats/:userId', async (req, res) => {
       order: [['date', 'ASC']]
     });
     
+    // Calculer le score de santé dynamiquement
+    let healthScore = 50; // Score de base
+    
+    // +10 points par rendez-vous (max 30)
+    const appointmentCount = Math.min(total * 10, 30);
+    healthScore += appointmentCount;
+    
+    // +15 points si au moins 1 RDV ce mois-ci
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const currentMonth = await Appointment.count({
+      where: {
+        userId,
+        date: {
+          [Op.gte]: firstDay.toISOString().split('T')[0],
+          [Op.lte]: lastDay.toISOString().split('T')[0]
+        }
+      }
+    });
+    if (currentMonth > 0) healthScore += 15;
+    
+    // +5 points de régularité (si RDV dans les 3 derniers mois)
+    const threeMonthsAgo = new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000);
+    const regular = await Appointment.count({
+      where: {
+        userId,
+        date: {
+          [Op.gte]: threeMonthsAgo.toISOString().split('T')[0]
+        }
+      }
+    });
+    if (regular >= 1) healthScore += 5;
+    
+    // Cap à 100
+    healthScore = Math.min(healthScore, 100);
+    
     res.json({
       total,
       next,
-      healthScore: 85 // Placeholder value
+      healthScore
     });
   } catch (err) {
     console.error("Stats error:", err);
@@ -126,6 +190,27 @@ app.get('/api/appointments', async (req, res) => {
 app.post('/api/appointments', async (req, res) => {
   try {
     const { date, time, doctorId, patientName, userId } = req.body;
+    
+    // Vérifier si la date et l'heure sont dans le passé
+    const now = new Date();
+    const todayAtMidnight = new Date(now);
+    todayAtMidnight.setHours(0, 0, 0, 0);
+    const appointmentDate = new Date(date);
+    
+    if (appointmentDate < todayAtMidnight) {
+      return res.status(400).json({ error: "Vous ne pouvez pas réserver une date qui est déjà passée." });
+    }
+    
+    // Vérifier si c'est aujourd'hui et si l'heure est passée
+    if (appointmentDate.getTime() === todayAtMidnight.getTime()) {
+      const [hours, minutes] = time.split(':').map(Number);
+      const appointmentTime = new Date(now);
+      appointmentTime.setHours(hours, minutes, 0, 0);
+      
+      if (appointmentTime < now) {
+        return res.status(400).json({ error: "Vous ne pouvez pas réserver une heure qui est déjà passée." });
+      }
+    }
     
     // Vérifier si le créneau est déjà réservé
     const existingAppointment = await Appointment.findOne({
@@ -181,6 +266,65 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
+// ========== ROUTES HISTORIQUE DÉTAILLÉ ==========
+
+// GET historique complet d'un patient
+app.get('/api/history/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('Récupération historique pour userId:', userId);
+    
+    // Obtenir aujourd'hui
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayString = today.toISOString().split('T')[0];
+    
+    // Récupérer seulement les rendez-vous passés
+    const { Op } = require('sequelize');
+    const history = await Appointment.findAll({
+      where: { 
+        userId,
+        date: {
+          [Op.lt]: todayString  // date < aujourd'hui
+        }
+      },
+      include: [
+        { model: Doctor },
+        { model: ConsultationNote }
+      ],
+      order: [['date', 'DESC']]
+    });
+    console.log('Historique trouvé:', history.length, 'rendez-vous');
+    res.json(history);
+  } catch (err) {
+    console.error('Erreur historique:', err.message);
+    res.status(500).json({ error: "Erreur lors de la récupération de l'historique", details: err.message });
+  }
+});
+
+// POST ajouter notes de consultation (docteur après rendez-vous)
+app.post('/api/consultation-notes', async (req, res) => {
+  try {
+    const { appointmentId, doctorId, userId, symptoms, diagnosis, treatment, notes } = req.body;
+    
+    const consultationNote = await ConsultationNote.create({
+      appointmentId,
+      doctorId,
+      userId,
+      symptoms,
+      diagnosis,
+      treatment,
+      notes,
+      visitDate: new Date()
+    });
+
+    res.status(201).json(consultationNote);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: "Erreur lors de la création de la note de consultation" });
+  }
+});
+
 app.get('/api/doctors', async (req, res) => {
   res.json(await Doctor.findAll());
 });
@@ -227,9 +371,92 @@ app.put('/api/doctors/:id', async (req, res) => {
   }
 });
 
+// ========== ROUTES GESTION UTILISATEURS (ADMIN) ==========
+
+// GET tous les utilisateurs (patients)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.findAll({ 
+      where: { role: 'user' },
+      attributes: { exclude: ['password'] }
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors de la récupération des utilisateurs" });
+  }
+});
+
+// GET un utilisateur par ID
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['password'] },
+      include: [{ model: Appointment, include: [Doctor] }]
+    });
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors de la récupération de l'utilisateur" });
+  }
+});
+
+// DELETE un utilisateur
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Vérifier que ce n'est pas un admin
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+    
+    if (user.role === 'admin') {
+      return res.status(403).json({ error: "Impossible de supprimer un administrateur" });
+    }
+    
+    // Supprimer tous les rendez-vous de l'utilisateur
+    await Appointment.destroy({ where: { userId: id } });
+    
+    // Supprimer l'utilisateur
+    await User.destroy({ where: { id } });
+    res.json({ message: "Utilisateur supprimé avec succès" });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors de la suppression de l'utilisateur" });
+  }
+});
+
+// PUT modifier un utilisateur
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email } = req.body;
+    
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+    
+    await User.update(
+      { name, email },
+      { where: { id } }
+    );
+    
+    const updatedUser = await User.findByPk(id, {
+      attributes: { exclude: ['password'] }
+    });
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(400).json({ error: "Erreur lors de la modification de l'utilisateur" });
+  }
+});
+
 // --- DÉMARRAGE AVEC MISE À JOUR DE LA BASE ---
-// L'option { alter: true } ajoute les colonnes manquantes (comme 'role') automatiquement
-sequelize.sync({ alter: true }).then(async () => {
+// L'option { alter: false } évite les problèmes de contraintes de clés étrangères SQLite
+sequelize.sync({ alter: false, force: false }).then(async () => {
   const admin = await User.findOne({ where: { email: "admin@test.com" } });
   if (!admin) {
     await User.create({ 

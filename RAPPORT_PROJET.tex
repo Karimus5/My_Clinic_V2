@@ -1,0 +1,827 @@
+\documentclass[12pt,a4paper,openany]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{tikz}
+
+% Configuration des couleurs
+\definecolor{darkblue}{RGB}{26,115,232}
+\definecolor{lightgray}{RGB}{240,240,240}
+
+% Configuration des en-têtes
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{My Clinic}}
+\lhead{Projet En Développement Mobile}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Configuration du titre
+\title{\textbf{\Huge My Clinic } \\ \vspace{0.5cm} \Large Application Mobile de Gestion de rendez-vous Médicale}
+\author{} % À remplir
+\date{\today}
+
+% Configuration des listings
+\lstset{
+    backgroundcolor=\color{lightgray},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    language=JavaScript,
+    keywordstyle=\color{darkblue}\bfseries,
+    commentstyle=\color{gray},
+    stringstyle=\color{red}
+}
+
+\begin{document}
+
+% ==================== PAGE DE GARDE ====================
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+    
+    {\Large \textbf{UNIVERSITÉ/ÉCOLE}} \\
+    \vspace{0.3cm}
+    {\normalsize Filière: INFORMATIQUE}
+    
+    \vspace{3cm}
+    
+    {\Large \textbf{PROJET FINAL}}
+    
+    \vspace{2cm}
+    
+    {\textcolor{darkblue}{\Huge \textbf{My Clinic V2}}} \\
+    \vspace{0.5cm}
+    {\Large Application Mobile de Gestion Médicale}
+    
+    \vspace{3cm}
+    
+    \begin{tabularx}{\textwidth}{p{3cm}X}
+        \textbf{Étudiants:} & \textit{Mekoaur Karim / Errechid Mohcine / El Asmar Sara /      El Bachyr Mariam} \\
+        & \\
+        \textbf{Encadrant:} & Pr. Mostafa SAADI \\
+        & \\
+        \textbf{Année Universitaire:} & 2025-2026 \\
+    \end{tabularx}
+    
+    \vfill
+    
+    {\normalsize \today}
+    
+\end{titlepage}
+
+% ==================== TABLE DES MATIÈRES ====================
+\tableofcontents
+\newpage
+
+% ==================== INTRODUCTION ====================
+\chapter{Introduction}
+
+\section{Contexte}
+
+Le secteur de la santé connaît une transformation numérique majeure. Les technologies mobiles sont devenues essentielles pour améliorer l'accès aux soins et l'expérience patient. Cependant, les systèmes traditionnels basés sur le téléphone ou le papier restent peu efficaces.
+
+Le marché des applications de santé croît exponentiellement: 70\% des patients préfèrent prendre rendez-vous en ligne, et le secteur mobile health (mHealth) devrait dépasser 200 milliards de dollars en 2026.
+
+\section{Problématique et objectifs}
+
+\subsection{Problèmes identifiés}
+
+\begin{itemize}
+    \item Inefficacité administrative (goulots d'étranglement téléphoniques)
+    \item Fragmentation des données médicales
+    \item Expérience patient médiocre (attentes longues, manque de traçabilité)
+    \item Prescriptions papier non centralisées
+    \item Accessibilité limitée en dehors des heures de bureau
+\end{itemize}
+
+\subsection{Question centrale}
+
+Comment développer une application mobile qui centralise la gestion des consultations médicales tout en offrant une excellente expérience utilisateur?
+
+\subsection{Objectifs}
+
+\textbf{Généraux:}
+\begin{itemize}
+    \item Créer une application mobile fonctionnelle avec React Native et Expo
+    \item Développer une API backend robuste (Node.js/Express)
+    \item Assurer l'authentification sécurisée et la persistance des données
+\end{itemize}
+
+\textbf{Spécifiques:}
+\begin{itemize}
+    \item Permettre l'inscription et connexion des utilisateurs
+    \item Afficher les médecins disponibles et recherchable par spécialité
+    \item Implémenter un système complet de rendez-vous
+    \item Gérer l'historique médical et les prescriptions
+    \item Intégrer la localisation sur carte
+\end{itemize}
+
+\section{Portée du projet}
+
+Le projet couvre le développement frontend mobile (React Native + Expo), le backend API (Node.js + Express), la base de données (SQLite), l'authentification sécurisée, et la gestion complète des rendez-vous.
+
+\textbf{Limites:} Pas d'intégration paiement, notifications push, ou vidéo consultation dans cette version.
+
+\newpage
+
+% ==================== DESCRIPTION DU PROJET ====================
+\chapter{Description générale du projet}
+
+\section{Présentation}
+
+\textbf{My Clinic } est une application mobile développée avec React Native et Expo. Elle permet aux patients de gérer leurs consultations médicales de manière centralisée et sécurisée. 
+
+L'application communique avec un backend Node.js/Express qui gère :
+\begin{itemize}
+    \item L'authentification des utilisateurs via JWT
+    \item La base de données SQLite avec Sequelize ORM
+    \item Les opérations métier (médecins, rendez-vous, consultations)
+    \item La sécurité et les permissions d'accès
+\end{itemize}
+
+L'architecture suit un pattern Service + Component + Screen qui assure modularité et maintenabilité du code.
+
+\section{Cibles et avantages}
+
+\subsection{Public cible}
+
+\begin{itemize}
+    \item \textbf{Patients}: Accès simplifié aux services de santé, gestion autonome des rendez-vous
+    \item \textbf{Médecins}: Gestion efficace des rendez-vous, accès à l'historique patient
+    \item \textbf{Administrateurs}: Tableau de bord complet, gestion des médecins et utilisateurs
+\end{itemize}
+
+\subsection{Avantages principaux}
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{|l|X|}
+        \hline
+        \textbf{Avantage} & \textbf{Bénéfice} \\
+        \hline
+        Disponibilité 24/7 & Accès illimité depuis n'importe quel smartphone, indépendamment des horaires \\
+        \hline
+        Sécurité & Authentification JWT, chiffrement des données sensibles, stockage sécurisé \\
+        \hline
+        Efficacité & Réduction drastique des appels téléphoniques, élimination du papier \\
+        \hline
+        Traçabilité & Historique complet centralisé et accessible à tout moment \\
+        \hline
+        UX moderne & Interface intuitive, responsive, navigation fluide \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\subsection{Comparaison avec systèmes existants}
+
+L'avantage majeur par rapport aux solutions actuelles (téléphone, papier) :
+
+\begin{itemize}
+    \item \textbf{Avant}: Patient appelle, attend une réponse, transcription manuelle, perte de données
+    \item \textbf{Après}: Patient prend RDV en 2 minutes via l'app, confirmation instantanée, historique permanent
+\end{itemize}
+
+\newpage
+
+% ==================== FONCTIONNALITÉS ====================
+\chapter{Fonctionnalités principales}
+
+\section{Authentification et profil utilisateur}
+
+\subsection{Inscription et connexion}
+
+L'authentification sécurisée utilise un token JWT stocké dans AsyncStorage. Les données collectées incluent le nom, l'email (unique) et le mot de passe. L'email est validé, le mot de passe hashé avec bcrypt côté serveur. Le token est injecté automatiquement dans les requêtes API.
+
+\subsection{Gestion du profil}
+
+Les utilisateurs peuvent consulter et modifier leurs informations personnelles (nom, email), changer leur mot de passe, et se déconnecter. Les données sont stockées localement avec persistance automatique après modifications.
+
+\section{Gestion complète des médecins}
+
+\subsection{Consultation de la liste}
+
+Les médecins sont affichés dans des cartes visuelles avec nom, spécialité, contact et localisation. Le chargement est asynchrone via \texttt{doctorService.getAllDoctors()} avec gestion des erreurs et indicateur de chargement.
+
+\subsection{Recherche et filtrage}
+
+Recherche en temps réel par nom du médecin via la composante \texttt{SearchBar}. Filtrage par spécialité (Cardiologie, Dermatologie, Dentisterie, etc.) avec résultats instantanés côté client.
+
+\subsection{Détails du médecin}
+
+Affichage complet incluant identification, spécialité, contact (téléphone, email), localisation et horaires de consultation. Options pour prendre rendez-vous ou appeler.
+
+\section{Système complet de gestion des rendez-vous}
+
+\subsection{Prise de rendez-vous}
+
+Formulaire simplifié comportant: sélection du médecin, choix de la date (calendrier), choix de l'heure (slots disponibles), motif de consultation, et confirmation. Validations côté client (date future, heure disponible, motif valide). Envoi vers \texttt{appointmentService.createAppointment()} avec vérification backend et création en base de données.
+
+\subsection{Historique des rendez-vous}
+
+Affichage centralisé des RDV futurs, passés et annulés. Chaque RDV affiche: médecin, spécialité, date/heure, motif, et statut (couleur-codé: vert=Confirmé, orange=Complété, rouge=Annulé). Support du chargement dynamique et refresh en tirant vers le haut.
+
+\subsection{Gestion des rendez-vous}
+
+Visualisation détaillée, annulation (avec confirmation), et modification possible (date/heure si slot libre). Contraintes: RDV complétés non annulables, délai d'annulation jusqu'à 24h avant le RDV.
+
+\section{Localisation géographique}
+
+\subsection{Carte interactive}
+
+Affichage de la position GPS du patient en temps réel, localisation des établissements médicaux sur carte (React Native Maps), contrôle du zoom, et bouton "Itinéraire" pour navigation. Permissions optionnelles: affichage d'une zone par défaut si GPS désactivé.
+
+\section{Panneau d'administration}
+
+\subsection{Tableau de bord administratif}
+
+Interface réservée aux utilisateurs avec rôle "admin" (sécurisée côté backend). Fonctionnalités:
+\begin{itemize}
+    \item Gestion des médecins: consultation, modification, activation/désactivation
+    \item Gestion des utilisateurs: liste, consultation profil, suppression (avec confirmation)
+    \item Statistiques globales: nombre de patients, médecins, rendez-vous
+\end{itemize}
+
+\section{Paramètres et configuration}
+
+\subsection{Écran de paramètres}
+
+Personnalisation selon les préférences utilisateur:
+\begin{itemize}
+    \item Profil: accès aux données personnelles, modification, changement mot de passe
+    \item Notifications: activation/désactivation, alertes rappel RDV
+    \item Apparence: thème clair/sombre, taille des polices
+    \item Sécurité: authentification biométrique, déconnexion multi-appareils
+    \item À propos: version app, conditions, politique confidentialité
+\end{itemize}
+
+Tous les paramètres sont sauvegardés localement dans AsyncStorage avec synchronisation optionnelle backend.
+
+\newpage
+
+% ==================== ARCHITECTURE TECHNIQUE ====================
+\chapter{Architecture technique}
+
+\section{Architecture générale}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % Mobile App
+        \draw[fill=lightgray, draw=darkblue, line width=2pt] (1,6) rectangle (3,7) node[pos=.5] {\textbf{React Native App}};
+        
+        % API
+        \draw[fill=lightgray, draw=darkblue, line width=2pt] (0,4) rectangle (4,5) node[pos=.5] {\textbf{Backend API} \\ Node.js/Express};
+        
+        % Database
+        \draw[fill=lightgray, draw=darkblue, line width=2pt] (0,2) rectangle (4,3) node[pos=.5] {\textbf{Base de Données} \\ SQLite/Sequelize};
+        
+        % Arrows
+        \draw[->, line width=2pt] (2,6) -- (2,5);
+        \draw[->, line width=2pt] (2,4) -- (2,3);
+        
+        % Labels
+        \node[right] at (2.3,5.5) {HTTP/REST};
+        \node[right] at (2.3,3.5) {Queries};
+    \end{tikzpicture}
+    \caption{Architecture en 3 couches}
+\end{figure}
+
+\section{Architecture fonctionnelle}
+
+\textbf{Pattern MVC modifié : Service + Component + Screen}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=0.9]
+        % Screens
+        \draw[fill=lightgray, draw=darkblue] (0.5,5) rectangle (2.5,6) node[pos=.5] {\textbf{Screens}};
+        
+        % Services
+        \draw[fill=lightgray, draw=darkblue] (3.5,5) rectangle (5.5,6) node[pos=.5] {\textbf{Services}};
+        
+        % API
+        \draw[fill=lightgray, draw=darkblue] (6.5,5) rectangle (8.5,6) node[pos=.5] {\textbf{Backend}};
+        
+        % Components
+        \draw[fill=lightgray, draw=darkblue] (0.5,3) rectangle (2.5,4) node[pos=.5] {\textbf{Components}};
+        
+        % Arrows
+        \draw[->, line width=2pt] (2.5,5.5) -- (3.5,5.5);
+        \draw[->, line width=2pt] (5.5,5.5) -- (6.5,5.5);
+        \draw[->, line width=2pt] (1.5,5) -- (1.5,4);
+        
+        % Labels
+        \node[above] at (3,5.7) {Appelle};
+        \node[above] at (6,5.7) {HTTP};
+        \node[left] at (1.2,4.5) {Affiche};
+    \end{tikzpicture}
+    \caption{Architecture fonctionnelle}
+\end{figure}
+
+\newpage
+
+\section{Structure des dossiers}
+
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small]
+My_clinicV2/
+├── src/
+│   ├── components/          # 8 composants réutilisables
+│   ├── config/              # Configuration API
+│   ├── context/             # Gestion d'état (AuthContext)
+│   ├── navigation/          # Navigation (AppNavigator, TabNavigator)
+│   ├── screens/             # 10 écrans principaux
+│   └── services/            # Services (auth, doctor, appointment)
+├── assets/                  # Images, icônes
+├── node_modules/            # Dépendances npm
+├── .expo/                   # Configuration Expo
+├── App.js                   # Entrée principale
+├── app.json                 # Config Expo
+├── index.js                 # Index
+├── package.json             # Dépendances frontend
+└── .gitignore              # Fichiers ignorés Git
+
+backend/
+├── routes/
+│   ├── auth.js              # Routes authentification
+│   └── doctors.js           # Routes médecins
+├── models/
+│   ├── User.js              # Modèle User
+│   └── Doctor.js            # Modèle Doctor
+├── node_modules/            # Dépendances npm
+├── server.js                # Serveur Express principal
+├── package.json             # Dépendances backend
+├── package-lock.json        # Lock file
+└── database.sqlite          # Base de données SQLite
+\end{lstlisting}
+
+\section{Couches de l'application}
+
+\subsection{Couche Présentation (Frontend)}
+
+\begin{itemize}
+    \item \textbf{Screens}: LoginScreen, HomeScreen, AppointmentForm, etc.
+    \item \textbf{Components}: CustomButton, CustomInput, DoctorCard, etc.
+    \item \textbf{Navigation}: AppNavigator (Stack), TabNavigator (Bottom Tabs)
+\end{itemize}
+
+\subsection{Couche Métier (Services)}
+
+\begin{itemize}
+    \item \textbf{authService}: Authentification et gestion utilisateur
+    \item \textbf{doctorService}: Opérations sur les médecins
+    \item \textbf{appointmentService}: Gestion des rendez-vous
+    \item \textbf{storageService}: Persistance des données
+    \item \textbf{api.js}: Configuration Axios avec intercepteurs
+\end{itemize}
+
+\subsection{Couche Backend (API)}
+
+\begin{itemize}
+    \item \textbf{Express}: Serveur HTTP
+    \item \textbf{Sequelize}: ORM et gestion de BD
+    \item \textbf{Routes API}: /login, /register, /doctors, /appointments
+\end{itemize}
+
+\subsection{Couche Données (Base de Données)}
+
+\begin{itemize}
+    \item \textbf{SQLite}: Base de données locale
+    \item \textbf{Modèles}: User, Doctor, Appointment
+\end{itemize}
+
+\newpage
+
+% ==================== MODÉLISATION UML ====================
+\chapter{Modélisation UML}
+
+\section{Diagramme de cas d'utilisation}
+
+Le diagramme de cas d'utilisation représente les interactions entre les acteurs (Patient et Administrateur) et le système My Clinic.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.1\textwidth]{images/use_case_diagram.png}
+    \caption{Diagramme de cas d'utilisation}
+\end{figure}
+
+\subsection{Acteurs principaux}
+
+\begin{itemize}
+    \item \textbf{Patient/User}: Utilisateur final qui prend des rendez-vous et gère son profil
+    \item \textbf{Administrateur}: Responsable de la gestion globale du système (médecins, utilisateurs, statistiques)
+\end{itemize}
+
+\subsection{Note importante}
+
+Les médecins ne disposent pas de compte utilisateur dans l'application. Ils sont gérés comme des entités de données par l'administrateur. Les patients consultent les informations des médecins et prennent rendez-vous avec eux, mais les médecins n'interagissent pas directement avec le système.
+
+\newpage
+
+\section{Diagramme de classes}
+
+Le diagramme de classes représente la structure des données et les relations entre les entités principales du système.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/class_diagram.png}
+    \caption{Diagramme de classes}
+\end{figure}
+
+\subsection{Relations principales}
+
+\begin{itemize}
+    \item Un \textbf{Patient} peut créer plusieurs \textbf{Appointments} (1 à n)
+    \item Un \textbf{Doctor} peut gérer plusieurs \textbf{Appointments} (1 à n)
+    \item Un \textbf{Appointment} est lié à un \textbf{Patient} et un \textbf{Doctor}
+    \item Un \textbf{Admin} peut gérer plusieurs \textbf{Doctors}
+\end{itemize}
+
+\newpage
+
+\section{Diagrammes de séquence}
+
+\subsection{Séquence 1: Actions du Patient}
+
+Le diagramme de séquence illustre les différentes actions que peut effectuer un patient dans le système.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/sequence_patient.png}
+    \caption{Diagramme de séquence - Actions du Patient}
+\end{figure}
+
+\newpage
+
+\subsection{Séquence 2: Actions de l'Admin}
+
+Le diagramme de séquence illustre les actions de gestion que peut effectuer un administrateur.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/sequence_admin.png}
+    \caption{Diagramme de séquence - Actions de l'Admin}
+\end{figure}
+
+\newpage
+
+% ==================== TECHNOLOGIES ====================
+\chapter{Technologies utilisées}
+
+\section{Frontend Mobile}
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Technologie} & \textbf{Version} & \textbf{Utilité} \\
+        \hline
+        React Native & 0.81.5 & Framework mobile \\
+        \hline
+        Expo & 54.0.31 & Plateforme de développement \\
+        \hline
+        React & 19.1.0 & Bibliothèque UI \\
+        \hline
+        React Navigation & 7.x & Navigation entre écrans \\
+        \hline
+        Axios & 1.13.2 & Requêtes HTTP \\
+        \hline
+        AsyncStorage & 2.2.0 & Stockage local persistant \\
+        \hline
+        Expo Vector Icons & Latest & Icônes vectorielles \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\section{Backend}
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Technologie} & \textbf{Version} & \textbf{Utilité} \\
+        \hline
+        Node.js & 16+ & Serveur JavaScript \\
+        \hline
+        Express & 4.x & Framework Web \\
+        \hline
+        Sequelize & Latest & ORM pour BD \\
+        \hline
+        SQLite & Latest & Base de données \\
+        \hline
+        CORS & Latest & Sécurité inter-domaines \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\section{Outils et Environnement}
+
+\begin{itemize}
+    \item \textbf{Git}: Gestion de version
+    \item \textbf{npm}: Gestionnaire de paquets
+    \item \textbf{VS Code}: Éditeur de code
+    \item \textbf{Android Studio/Xcode}: Émulateurs
+\end{itemize}
+
+\newpage
+
+% ==================== CAPTURES D'ÉCRAN ====================
+\chapter{Captures d'écran}
+
+\section{Écrans d'authentification}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/login_screen.png}
+    \caption{Écran de connexion}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/register_screen.png}
+    \caption{Écran d'inscription}
+\end{figure}
+
+\section{Écrans principaux}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/home_screen.png}
+    \caption{Écran d'accueil - Liste des médecins}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/appointment_screen.png}
+    \caption{Formulaire de rendez-vous}
+\end{figure}
+
+\section{Avis et commentaires}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/ratings_comments_screen.png}
+    \caption{Avis en étoiles et commentaires des patients}
+\end{figure}
+
+\section{Mes rendez-vous}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/appointments.png}
+    \caption{Liste des rendez-vous}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/appointments_history.png}
+    \caption{Historique et gestion des rendez-vous}
+\end{figure}
+
+\section{Écrans principaux (suite)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/profile_screen.png}
+    \caption{Profil utilisateur}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/map_screen.png}
+    \caption{Localisation sur carte}
+\end{figure}
+
+\section{Administrateur et Paramètres}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/admin_screen.png}
+    \caption{Panneau d'administration}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/ajout_medecin.png}
+    \caption{Ajouter Medecin}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/update_delete.png}
+    \caption{Gérer un médecin}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/gerer_patient.png}
+    \caption{Gérer un patient}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/settings_screen.png}
+    \caption{Paramètres et configuration}
+\end{figure}
+
+% ==================== DIFFICULTÉS ET SOLUTIONS ====================
+\chapter{Difficultés rencontrées et solutions}
+
+\section{Difficultés techniques}
+
+\subsection{Défi 1: Communication Frontend-Backend}
+
+\textbf{Problème:} 
+Les données n'étaient pas correctement transmises entre l'app React Native et le backend Node.js.
+
+\textbf{Solution:}
+\begin{itemize}
+    \item Créer une couche service centralisée (authService, doctorService)
+    \item Utiliser Axios avec intercepteurs pour ajouter automatiquement les tokens
+    \item Ajouter CORS sur le backend
+\end{itemize}
+
+\subsection{Défi 2: Gestion d'état}
+
+\textbf{Problème:}
+L'authentification n'était pas persistante après fermeture de l'app.
+
+\textbf{Solution:}
+\begin{itemize}
+    \item Implémenter React Context API pour la gestion centralisée
+    \item Sauvegarder l'utilisateur dans AsyncStorage
+    \item Charger les données au démarrage de l'app
+\end{itemize}
+
+\subsection{Défi 3: Architecture scalable}
+
+\textbf{Problème:}
+Le code devenait peu maintenable avec la logique métier mélangée dans les écrans.
+
+\textbf{Solution:}
+\begin{itemize}
+    \item Créer des services isolés pour chaque domaine
+    \item Créer des composants réutilisables
+    \item Respecter l'architecture Service + Component + Screen
+\end{itemize}
+
+\section{Difficultés organisationnelles}
+
+\subsection{Défi 1: Coordination équipe}
+
+\textbf{Solution:}
+\begin{itemize}
+    \item Utiliser Git pour la gestion de version
+    \item Faire des commits réguliers et significatifs
+    \item Maintenir une documentation à jour (README.md)
+\end{itemize}
+
+\subsection{Défi 2: Respect de la deadline}
+
+\textbf{Solution:}
+\begin{itemize}
+    \item Diviser le projet en sprints
+    \item Prioriser les features essentielles
+    \item Tests réguliers pour détecter les bugs tôt
+\end{itemize}
+
+% ==================== CONCLUSION ====================
+\chapter{Conclusion et perspectives}
+
+\section{Bilan du projet}
+
+Le projet \textbf{My Clinic V2} a été développé avec succès et respecte tous les critères demandés:
+
+\begin{itemize}
+    \item ✅ 10 écrans fonctionnels
+    \item ✅ Architecture modulaire et réutilisable
+    \item ✅ Intégration API backend
+    \item ✅ Base de données SQLite
+    \item ✅ Authentification sécurisée
+    \item ✅ Navigation Stack et Tab bien configurée
+    \item ✅ Code propre et bien documenté
+    \item ✅ React Native + Expo confirmés
+\end{itemize}
+
+\section{Compétences acquises}
+
+Au cours de ce projet, nous avons acquis des compétences en:
+
+\begin{itemize}
+    \item Développement mobile cross-platform (React Native)
+    \item Architecture logicielle (Pattern MVC)
+    \item Développement backend (Node.js, Express)
+    \item Gestion de base de données (SQLite, Sequelize)
+    \item Gestion de projet (Git, organisation)
+    \item Communication client-serveur (REST API, Axios)
+\end{itemize}
+
+\section{Améliorations futures}
+
+Pour les versions futures, nous envisageons:
+
+\begin{enumerate}
+    \item \textbf{Notifications Push}: Alertes pour les rendez-vous
+    \item \textbf{Paiement}: Intégration Stripe pour les consultations payantes
+    \item \textbf{Vidéo Consultation}: Appels vidéo directement dans l'app
+    \item \textbf{Export PDF}: Téléchargement des prescriptions
+    \item \textbf{Multi-langue}: Support du français, anglais, arabe
+    \item \textbf{Mode hors ligne}: Consultation des données sans internet
+    \item \textbf{Analytics}: Suivi des statistiques d'utilisation
+    \item \textbf{Tests automatisés}: Jest et Detox pour la couverture de test
+\end{enumerate}
+
+\section{Perspectives professionnelles}
+
+Ce projet démontre notre capacité à:
+
+\begin{itemize}
+    \item Développer une application mobile complète et fonctionnelle
+    \item Intégrer plusieurs technologies de manière cohérente
+    \item Résoudre des problèmes complexes
+    \item Travailler en équipe et respecter les deadlines
+    \item Documenter et communiquer clairement
+\end{itemize}
+
+Ces compétences sont directement applicables dans un environnement professionnel moderne.
+
+\section{Remerciements}
+
+Nous tenons à remercier:
+\begin{itemize}
+    \item Pr. Mostafa SAADI pour son encadrement et ses conseils
+    \item L'équipe pédagogique pour leur support
+    \item Nos collègues pour les retours et suggestions
+\end{itemize}
+
+\vfill
+
+\begin{flushright}
+    \textit{Développé avec passion et professionnalisme} \\
+    \today
+\end{flushright}
+
+% ==================== ANNEXES ====================
+\appendix
+
+\chapter{Documentation supplémentaire}
+
+\section{Accès aux sources}
+
+Le code source complet du projet est disponible sur GitHub:
+\begin{itemize}
+    \item Frontend: \texttt{My_clinicV2/src/}
+    \item Backend: \texttt{backend/}
+    \item Documentation: \texttt{README.md}
+\end{itemize}
+
+\section{Structure du dépôt}
+
+\begin{verbatim}
+Projet/
+├── My_clinicV2/          # Application mobile
+│   ├── src/
+│   │   ├── components/   # Composants réutilisables
+│   │   ├── screens/      # Écrans principaux
+│   │   ├── services/     # Logique métier
+│   │   └── navigation/   # Navigation
+│   └── README.md         # Documentation frontend
+│
+├── backend/              # API backend
+│   ├── models/           # Modèles Sequelize
+│   ├── routes/           # Routes API
+│   └── server.js         # Serveur Express
+│
+└── RAPPORT_PROJET.tex    # Ce rapport
+\end{verbatim}
+
+\section{Installation et déploiement}
+
+Pour installer et exécuter le projet:
+
+\begin{enumerate}
+    \item Cloner le repository
+    \item Installer les dépendances: \texttt{npm install}
+    \item Configurer l'API dans \texttt{src/config/api.js}
+    \item Lancer le backend: \texttt{node backend/server.js}
+    \item Lancer l'app: \texttt{npm start}
+\end{enumerate}
+
+\section{Ressources et références}
+
+\begin{itemize}
+    \item \textbf{React Native}: \url{https://reactnative.dev}
+    \item \textbf{Expo}: \url{https://expo.dev}
+    \item \textbf{Node.js/Express}: \url{https://expressjs.com}
+    \item \textbf{Sequelize ORM}: \url{https://sequelize.org}
+\end{itemize}
+
+\end{document}
